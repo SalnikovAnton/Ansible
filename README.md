@@ -21,4 +21,7 @@ Host nginx
   IdentityFile /home/anton/Ansible/.vagrant/machines/nginx/virtualbox/private_key
 ```
 Используя эти параметры создадим inventory файл  
-
+```
+[web]
+nginx ansible_host=127.0.0.1 ansible_port=2222 ansible_user=vagrant ansible_private_key_file=/home/anton/Ansible/.vagrant/machines/nginx/virtualbox/private_key
+```
