@@ -36,7 +36,7 @@ nginx | SUCCESS => {
     "ping": "pong"
 }
 ```
-Для того, чтобы уйти от постоянной настройки inventory файла необходимо в текущем каталоге создать файл ansible.cfg со следующим
+Для того, чтобы уйти от постоянной настройки inventory файла необходимо в текущем каталоге создать файл  [ansible.cfg](https://github.com/SalnikovAnton/Ansible/blob/main/ansible.cfg "ansible.cfg") со следующим
 содержанием: 
 ```
 [defaults]
@@ -45,7 +45,7 @@ remote_user = vagrant
 host_key_checking = False
 retry_files_enabled = False
 ```
-После этого из inventory  файла можно убрать информацию пользователя
+После этого из [inventory](https://github.com/SalnikovAnton/Ansible/blob/main/inventory "inventory") файла можно убрать информацию пользователя
 ```
 [web]
 nginx ansible_host=127.0.0.1 ansible_port=2222 ansible_private_key_file=.vagrant/machines/nginx/virtualbox/private_key
@@ -248,15 +248,3 @@ anton@anton-VirtualBox:~/Ansible$ curl http://192.168.56.150:8080
 
         body {
 ```
-
-
-
-
-
-
-```
-
-```
-
-
-
