@@ -162,7 +162,7 @@ nginx                      : ok=2    changed=1    unreachable=0    failed=0    s
   hosts: nginx
   become: true
   vars:
-    nginx_listen_port: 8080
+    nginx_listen_port: 8080 
 
   tasks:
     - name: NGINX | Install EPEL Repo package from standart repo
@@ -183,7 +183,7 @@ nginx                      : ok=2    changed=1    unreachable=0    failed=0    s
         - nginx-package
         - packages
 
-    - name: NGINX | Create NGINX config file from template           ==> шаблон для конфига NGINX и модуль, который будет копировать этот шаблон на хост:
+    - name: NGINX | Create NGINX config file from template           ==> шаблон для конфига NGINX и модуль, который будет копировать этот шаблон на хост
       template:
         src: templates/nginx.conf.j2
         dest: /etc/nginx/nginx.conf
@@ -193,30 +193,18 @@ nginx                      : ok=2    changed=1    unreachable=0    failed=0    s
         - nginx-configuration
 
   handlers:
-    - name: restart nginx
-      systemd:
+    - name: restart nginx                                            ==> Так же создадим handler для рестарта и включения сервиса при загрузке. 
+      systemd:                                                           Теперь каждый раз когда конфиг будет изменяться - сервис перезагрузится.
         name: nginx
         state: restarted
         enabled: yes
     
-    - name: reload nginx
+    - name: reload nginx                                             ==> Перечитываем конфиг
       systemd:
         name: nginx
         state: reloaded
 ```
-
-
-
-
-
-
-
-
-
-
-
-```
----
+Запускаем Playbook nginx.yml
 ```
 anton@anton-VirtualBox:~/Ansible$ ansible-playbook nginx.yml
 
@@ -239,4 +227,36 @@ changed: [nginx]
 
 PLAY RECAP ***********************************************************************************************************
 nginx                      : ok=5    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+```
+Проверим доступность через curl
+```
+anton@anton-VirtualBox:~/Ansible$ curl http://192.168.56.150:8080
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <title>Welcome to CentOS</title>
+  <style rel="stylesheet" type="text/css"> 
+
+        html {
+        background-image:url(img/html-background.png);
+        background-color: white;
+        font-family: "DejaVu Sans", "Liberation Sans", sans-serif;
+        font-size: 0.85em;
+        line-height: 1.25em;
+        margin: 0 4% 0 4%;
+        }
+
+        body {
+```
+
+
+
+
+
+
+```
+
+```
+
+
 
