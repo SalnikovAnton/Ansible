@@ -7,7 +7,7 @@
 * сайт должен слушать на нестандартном порту - 8080, для этого использовать переменные в Ansible
 
 
-#### Запускаем вертуальную машину используя [Vagrant-file](https://gist.github.com/lalbrekht/f811ce9a921570b1d95e07a7dbebeb1e "Vagrant-file").  
+#### Запускаем вертуальную машину используя [Vagrant-file](https://github.com/SalnikovAnton/Ansible/blob/main/Vagrantfile "Vagrant-file").  
 После поднятия машины узнаем необходимые параметры  
 ```
 anton@anton-VirtualBox:~/Ansible$ vagrant ssh-config
@@ -204,7 +204,7 @@ nginx                      : ok=2    changed=1    unreachable=0    failed=0    s
         name: nginx
         state: reloaded
 ```
-Запускаем Playbook nginx.yml
+Запускаем Playbook [nginx.yml](https://github.com/SalnikovAnton/Ansible/blob/main/nginx.yml "nginx.yml").
 ```
 anton@anton-VirtualBox:~/Ansible$ ansible-playbook nginx.yml
 
