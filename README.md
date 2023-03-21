@@ -79,7 +79,7 @@ nginx | SUCCESS => {
     "status": {
         "ActiveEnterTimestampMonotonic": "0",
         "ActiveExitTimestampMonotonic": "0",
-        "ActiveState": "inactive",      ----->  не активен
+        "ActiveState": "inactive",                                   ===>  не активен
 ...
 ```
 Установим пакет epel-release на наш хост
@@ -89,7 +89,7 @@ nginx | CHANGED => {
     "ansible_facts": {
         "discovered_interpreter_python": "/usr/bin/python"
     },
-    "changed": true,           ----->  установился
+    "changed": true,                                                 ===>  установился
         "changes": {
         "installed": [
             "epel-release"
