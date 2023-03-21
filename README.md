@@ -20,8 +20,223 @@ Host nginx
   PasswordAuthentication no
   IdentityFile /home/anton/Ansible/.vagrant/machines/nginx/virtualbox/private_key
 ```
-Используя эти параметры создадим inventory файл  
+Используя эти параметры создадим inventory файл и сохраняем его в папку /Ansible/staging/hosts
 ```
 [web]
 nginx ansible_host=127.0.0.1 ansible_port=2222 ansible_user=vagrant ansible_private_key_file=/home/anton/Ansible/.vagrant/machines/nginx/virtualbox/private_key
 ```
+Проверяем что Ansible может управлāть нашим хостом
+```
+anton@anton-VirtualBox:~/Ansible$ ansible nginx -i staging/hosts -m ping
+nginx | SUCCESS => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python"
+    },
+    "changed": false,
+    "ping": "pong"
+}
+```
+Для того, чтобы уйти от постоянной настройки inventory файла необходимо в текущем каталоге создать файл ansible.cfg со следующим
+содержанием: 
+```
+[defaults]
+inventory = staging/hosts
+remote_user = vagrant
+host_key_checking = False
+retry_files_enabled = False
+```
+После этого из inventory  файла можно убрать информацию пользователя
+```
+[web]
+nginx ansible_host=127.0.0.1 ansible_port=2222 ansible_private_key_file=.vagrant/machines/nginx/virtualbox/private_key
+```
+Еще раз убедимся, что управляемый хост доступен, только теперь без явного указания inventory файла:
+```
+anton@anton-VirtualBox:~/Ansible$ ansible nginx -m ping
+nginx | SUCCESS => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python"
+    },
+    "changed": false,
+    "ping": "pong"
+}
+```
+Посмотрим какое ядро установлено на хосте
+```
+anton@anton-VirtualBox:~/Ansible$ ansible nginx -m command -a "uname -r"
+nginx | CHANGED | rc=0 >>
+3.10.0-1127.el7.x86_64
+```
+Проверим статус сервиса firewalld
+```
+anton@anton-VirtualBox:~/Ansible$ ansible nginx -m systemd -a name=firewalld
+nginx | SUCCESS => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python"
+    },
+    "changed": false,
+    "name": "firewalld",
+    "status": {
+        "ActiveEnterTimestampMonotonic": "0",
+        "ActiveExitTimestampMonotonic": "0",
+        "ActiveState": "inactive",      ----->  не активен
+...
+```
+Установим пакет epel-release на наш хост
+```
+anton@anton-VirtualBox:~/Ansible$ ansible nginx -m yum -a "name=epel-release state=present" -b
+nginx | CHANGED => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python"
+    },
+    "changed": true,           ----->  установился
+        "changes": {
+        "installed": [
+            "epel-release"
+        ]
+    },
+...
+```
+Напишем простой Playbook который будет делать одно действие - а именно: установку пакета epel-release. Создаем файл epel.yml со следующим содержимым
+```
+---
+- name: Install EPEL Repo
+  hosts: nginx
+  become: true
+  tasks:
+    - name: Install EPEL Repo package from standart repo
+      yum:
+        name: epel-release
+        state: present
+```
+Запускаем выполнение Playbook
+```
+anton@anton-VirtualBox:~/Ansible$ ansible-playbook epel.yml
+
+PLAY [Install EPEL Repo] *********************************************************************************************
+
+TASK [Gathering Facts] ***********************************************************************************************
+ok: [nginx]
+
+TASK [Install EPEL Repo package from standart repo] ******************************************************************
+ok: [nginx]
+
+PLAY RECAP ***********************************************************************************************************
+nginx                      : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+```
+Затем выполняем 
+```
+anton@anton-VirtualBox:~/Ansible$ ansible nginx -m yum -a "name=epel-release state=absent" -b
+nginx | CHANGED => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python"
+    },
+    "changed": true,
+    "changes": {
+        "removed": [
+            "epel-release"
+        ]
+    },
+...
+```
+Затем опять запускаем Playbook и видем разницу в выполнении 
+```
+anton@anton-VirtualBox:~/Ansible$ ansible-playbook epel.yml
+
+PLAY [Install EPEL Repo] *********************************************************************************************
+
+TASK [Gathering Facts] ***********************************************************************************************
+ok: [nginx]
+
+TASK [Install EPEL Repo package from standart repo] ******************************************************************
+changed: [nginx]
+
+PLAY RECAP ***********************************************************************************************************
+nginx                      : ok=2    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+                                        /\
+```
+Теперь приступим к написанию Playbook-а для установки NGINX. В файле добавились tags для выполнения отдельных действий по Playbook-у
+```
+---
+- name: NGINX | Install and configure NGINX
+  hosts: nginx
+  become: true
+  vars:
+    nginx_listen_port: 8080
+
+  tasks:
+    - name: NGINX | Install EPEL Repo package from standart repo
+      yum:
+        name: epel-release
+        state: present
+      tags:
+        - epel-package
+        - packages
+
+    - name: NGINX | Install NGINX package from EPEL Repo
+      yum:
+        name: nginx
+        state: latest
+      notify:
+        - restart nginx
+      tags:
+        - nginx-package
+        - packages
+
+    - name: NGINX | Create NGINX config file from template           ==> шаблон для конфига NGINX и модуль, который будет копировать этот шаблон на хост:
+      template:
+        src: templates/nginx.conf.j2
+        dest: /etc/nginx/nginx.conf
+      notify:
+        - reload nginx
+      tags:
+        - nginx-configuration
+
+  handlers:
+    - name: restart nginx
+      systemd:
+        name: nginx
+        state: restarted
+        enabled: yes
+    
+    - name: reload nginx
+      systemd:
+        name: nginx
+        state: reloaded
+```
+
+
+
+
+
+
+
+
+
+
+
+```
+---
+```
+anton@anton-VirtualBox:~/Ansible$ ansible-playbook nginx.yml
+
+PLAY [NGINX | Install and configure NGINX] ***************************************************************************
+
+TASK [Gathering Facts] ***********************************************************************************************
+ok: [nginx]
+
+TASK [NGINX | Install EPEL Repo package from standart repo] **********************************************************
+ok: [nginx]
+
+TASK [NGINX | Install NGINX package from EPEL Repo] ******************************************************************
+ok: [nginx]
+
+TASK [NGINX | Create NGINX config file from template] ****************************************************************
+changed: [nginx]
+
+RUNNING HANDLER [reload nginx] ***************************************************************************************
+changed: [nginx]
+
+PLAY RECAP ***********************************************************************************************************
+nginx                      : ok=5    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
